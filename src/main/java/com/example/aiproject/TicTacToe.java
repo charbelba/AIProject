@@ -23,14 +23,14 @@ public class TicTacToe extends Application {
                     if (!gameEnded && button.getText().isEmpty()) {
                         if (playerTurn) {
                             button.setText("X");
-                        } else {
-                            button.setText("O");
+                            playerTurn = false;
                         }
-                        playerTurn = !playerTurn;
                         checkGame();
                         if (!gameEnded && !playerTurn) {
                             int[] move = findBestMove();
-                            buttons[move[0]][move[1]].fire();
+                            buttons[move[0]][move[1]].setText("O");
+                            playerTurn = true;
+                            checkGame();
                         }
                     }
                 });
@@ -45,47 +45,51 @@ public class TicTacToe extends Application {
         primaryStage.show();
     }
 
+    private void checkGame() {
+        String winner = checkWinner();
+        if (!winner.equals("")) {
+            endGame(winner + " wins!");
+        } else if (!isMovesLeft()) {
+            endGame("It's a draw!");
+        }
+    }
+
+    private String checkWinner() {
+        for (int i = 0; i < 3; i++) {
+            if (!buttons[i][0].getText().isEmpty() && buttons[i][0].getText().equals(buttons[i][1].getText()) && buttons[i][1].getText().equals(buttons[i][2].getText())) {
+                return buttons[i][0].getText();
+            }
+            if (!buttons[0][i].getText().isEmpty() && buttons[0][i].getText().equals(buttons[1][i].getText()) && buttons[1][i].getText().equals(buttons[2][i].getText())) {
+                return buttons[0][i].getText();
+            }
+        }
+        // Check diagonls
+        if (!buttons[0][0].getText().isEmpty() && buttons[0][0].getText().equals(buttons[1][1].getText()) && buttons[1][1].getText().equals(buttons[2][2].getText())) {
+            return buttons[0][0].getText();
+        }
+        if (!buttons[0][2].getText().isEmpty() && buttons[0][2].getText().equals(buttons[1][1].getText()) && buttons[1][1].getText().equals(buttons[2][0].getText())) {
+            return buttons[0][2].getText();
+        }
+        return "";
+    }
+
+    private void endGame(String message) {
+        gameEnded = true;
+        System.out.println(message);
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                buttons[i][j].setDisable(true);
+            }
+        }
+    }
+
     private int evaluate() {
-        for (int row = 0; row < 3; row++) {
-            if (buttons[row][0].getText().equals(buttons[row][1].getText()) &&
-                    buttons[row][1].getText().equals(buttons[row][2].getText())) {
-                if (buttons[row][0].getText().equals("X")) {
-                    return 10;
-                } else if (buttons[row][0].getText().equals("O")) {
-                    return -10;
-                }
-            }
+        String winner = checkWinner();
+        if (winner.equals("X")) {
+            return -10;
+        } else if (winner.equals("O")) {
+            return 10;
         }
-
-        for (int col = 0; col < 3; col++) {
-            if (buttons[0][col].getText().equals(buttons[1][col].getText()) &&
-                    buttons[1][col].getText().equals(buttons[2][col].getText())) {
-                if (buttons[0][col].getText().equals("X")) {
-                    return 10;
-                } else if (buttons[0][col].getText().equals("O")) {
-                    return -10;
-                }
-            }
-        }
-
-        if (buttons[0][0].getText().equals(buttons[1][1].getText()) &&
-                buttons[1][1].getText().equals(buttons[2][2].getText())) {
-            if (buttons[0][0].getText().equals("X")) {
-                return 10;
-            } else if (buttons[0][0].getText().equals("O")) {
-                return -10;
-            }
-        }
-
-        if (buttons[0][2].getText().equals(buttons[1][1].getText()) &&
-                buttons[1][1].getText().equals(buttons[2][0].getText())) {
-            if (buttons[0][2].getText().equals("X")) {
-                return 10;
-            } else if (buttons[0][2].getText().equals("O")) {
-                return -10;
-            }
-        }
-
         return 0;
     }
 
@@ -125,11 +129,8 @@ public class TicTacToe extends Application {
     private int minimax(int depth, boolean isMaximizingPlayer, int alpha, int beta) {
         int score = evaluate();
 
-        if (score == 10) {
+        if (Math.abs(score) == 10) {
             return score - depth;
-        }
-        if (score == -10) {
-            return score + depth;
         }
         if (!isMovesLeft()) {
             return 0;
@@ -141,11 +142,12 @@ public class TicTacToe extends Application {
                 for (int j = 0; j < 3; j++) {
                     if (buttons[i][j].getText().isEmpty()) {
                         buttons[i][j].setText("O");
-                        best = Math.max(best, minimax(depth + 1, false, alpha, beta));
+                        int val = minimax(depth + 1, false, alpha, beta);
                         buttons[i][j].setText("");
+                        best = Math.max(best, val);
                         alpha = Math.max(alpha, best);
                         if (beta <= alpha) {
-                            return best;
+                            break;
                         }
                     }
                 }
@@ -157,61 +159,18 @@ public class TicTacToe extends Application {
                 for (int j = 0; j < 3; j++) {
                     if (buttons[i][j].getText().isEmpty()) {
                         buttons[i][j].setText("X");
-                        best = Math.min(best, minimax(depth + 1, true, alpha, beta));
+                        int val = minimax(depth + 1, true, alpha, beta);
                         buttons[i][j].setText("");
+                        best = Math.min(best, val);
                         beta = Math.min(beta, best);
                         if (beta <= alpha) {
-                            return best;
+                            break;
                         }
                     }
                 }
             }
             return best;
         }
-    }
-
-    private void checkGame() {
-        for (int row = 0; row < 3; row++) {
-            if (!buttons[row][0].getText().isEmpty() &&
-                    buttons[row][0].getText().equals(buttons[row][1].getText()) &&
-                    buttons[row][1].getText().equals(buttons[row][2].getText())) {
-                endGame(buttons[row][0].getText() + " wins!");
-                return;
-            }
-        }
-
-        for (int col = 0; col < 3; col++) {
-            if (!buttons[0][col].getText().isEmpty() &&
-                    buttons[0][col].getText().equals(buttons[1][col].getText()) &&
-                    buttons[1][col].getText().equals(buttons[2][col].getText())) {
-                endGame(buttons[0][col].getText() + " wins!");
-                return;
-            }
-        }
-
-        if (!buttons[0][0].getText().isEmpty() &&
-                buttons[0][0].getText().equals(buttons[1][1].getText()) &&
-                buttons[1][1].getText().equals(buttons[2][2].getText())) {
-            endGame(buttons[0][0].getText() + " wins!");
-            return;
-        }
-
-        if (!buttons[0][2].getText().isEmpty() &&
-                buttons[0][2].getText().equals(buttons[1][1].getText()) &&
-                buttons[1][1].getText().equals(buttons[2][0].getText())) {
-            endGame(buttons[0][2].getText() + " wins!");
-            return;
-        }
-
-        if (!isMovesLeft()) {
-            endGame("It's a draw!");
-            return;
-        }
-    }
-
-    private void endGame(String message) {
-        gameEnded = true;
-        System.out.println(message);
     }
 
     public static void main(String[] args) {
